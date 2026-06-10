@@ -1,0 +1,11 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: kaziboard
+      POSTGRES_DB: kazidatabase
+    ports:
+      - "5432:5432"
