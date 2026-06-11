@@ -1,9 +1,41 @@
 //URL paths
 
-import {Router, Request, Response} from 'express'
+import {Router, Request, Response, NextFunction} from 'express'
+import {registerSchema, loginSchema} from './auth.schema';
+import {ZodObject} from 'zod';
 
 //initialize the router 
 const authRouter: Router = Router();
+
+
+
+//build a middleware function to handle errors in the routes
+
+
+export const validateBody = (schema: ZodObject) => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    // Perform data validation
+    const result = schema.safeParse(req.body);
+
+    // If validation fails, return a 400 Bad Request error early
+    if (!result.success) {
+      res.status(400).json({
+        status: 'fail',
+        message: 'Validation failed',
+        errors: result.error.issues.map(err => ({
+          field: err.path.join('.'),
+          message: err.message
+        }))
+      });
+      return; 
+    }
+
+    // Overwrite req.body with the cleaned, parsed data
+    req.body = result.data;
+    next();
+  };
+};
+
 
 //GET route that fetch ALL users may be needed later on
 authRouter.get('/', (req: Request, res: Response) => {
@@ -20,7 +52,7 @@ interface RegisterBody {
 
 //request route
 
-authRouter.post('/register', (req: Request<{}, {}, RegisterBody>, res: Response) => {
+authRouter.post('/register',validateBody(registerSchema),(req: Request<{}, {}, RegisterBody>, res: Response) => {
   const { name, email, password } = req.body;
   res.status(201).json({
         message: `User ${name} created successfully`
@@ -37,7 +69,7 @@ interface LoginBody {
 
 //request route
 
-authRouter.post('/login', (req: Request<{}, {}, LoginBody>, res: Response) => {
+authRouter.post('/login', validateBody(loginSchema),(req: Request<{}, {}, LoginBody>, res: Response) => {
   const { email, password } = req.body;
   res.status(201).json({
         message: `User ${email} logged in successfully`
