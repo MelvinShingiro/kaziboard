@@ -4,6 +4,8 @@ import {Router, Request, Response, NextFunction} from 'express'
 import {registerSchema, loginSchema} from './auth.schema';
 import {success, ZodObject} from 'zod';
 import { loginUser, registerUser } from './auth.service';
+import { generateToken } from '../../utils/token';
+
 
 //initialize the router 
 const authRouter: Router = Router();
@@ -59,9 +61,13 @@ authRouter.post('/register',validateBody(registerSchema), async(req: Request<{},
   const { name, email, password } = req.body;
   // console.log("REGISTER BODY:", req.body);
   const user = await registerUser(req.body);
+  const token = generateToken(user.id);
 
   res.status(201).json({
-        message: `User ${user.name} created successfully`
+        success: true,
+        message: `User ${user.name} created successfully`,
+        user,
+        token,
   });
 
   } catch (error) {
@@ -97,11 +103,13 @@ authRouter.post(
       const { email } = req.body;
 
       const user = await loginUser(req.body);
+      const token = generateToken(user.id);
 
       return res.status(200).json({
         success: true,
         message: `User ${email} logged in successfully`,
         user,
+        token,
       });
     } catch (error) {
       if (error instanceof Error && error.message === "Invalid email or password") {
