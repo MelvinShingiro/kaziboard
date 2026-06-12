@@ -3,7 +3,7 @@
 import {Router, Request, Response, NextFunction} from 'express'
 import {registerSchema, loginSchema} from './auth.schema';
 import {success, ZodObject} from 'zod';
-import { registerUser } from './auth.service';
+import { loginUser, registerUser } from './auth.service';
 
 //initialize the router 
 const authRouter: Router = Router();
@@ -57,7 +57,7 @@ authRouter.post('/register',validateBody(registerSchema), async(req: Request<{},
 
   try {
   const { name, email, password } = req.body;
-  console.log("REGISTER BODY:", req.body);
+  // console.log("REGISTER BODY:", req.body);
   const user = await registerUser(req.body);
 
   res.status(201).json({
@@ -76,7 +76,7 @@ authRouter.post('/register',validateBody(registerSchema), async(req: Request<{},
 
     res.status(500).json({ success: false, message: 'Server Error'});
 
-    console.log("REGISTER ERROR:", error);
+    // console.log("REGISTER ERROR:", error);
   }
 })
 
@@ -89,14 +89,35 @@ interface LoginBody {
 }
 
 //request route
+authRouter.post(
+  "/login",
+  validateBody(loginSchema),
+  async (req: Request<{}, {}, LoginBody>, res: Response) => {
+    try {
+      const { email } = req.body;
 
-authRouter.post('/login', validateBody(loginSchema),(req: Request<{}, {}, LoginBody>, res: Response) => {
-  const { email, password } = req.body;
-  res.status(201).json({
-        message: `User ${email} logged in successfully`
-  });
-})
+      const user = await loginUser(req.body);
 
+      return res.status(200).json({
+        success: true,
+        message: `User ${email} logged in successfully`,
+        user,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message === "Invalid email or password") {
+        return res.status(401).json({
+          success: false,
+          message: "Invalid email or password",
+        });
+      }
+
+      return res.status(500).json({
+        success: false,
+        message: "Server error",
+      });
+    }
+  }
+);
 
 
 export default authRouter;

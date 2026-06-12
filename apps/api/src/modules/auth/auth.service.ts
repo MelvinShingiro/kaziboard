@@ -1,10 +1,9 @@
 //business logic/ database logic
 
-import {registerSchema, loginSchema} from './auth.schema';
-import { Prisma } from '../../generated/prisma/client';
 import bcrypt from 'bcrypt';
 import type { RegisterInput } from './auth.schema';
 import {prisma} from "../../config/db"
+import type { LoginInput } from './auth.schema';
 
 
 const SALT_ROUNDS = 10;
@@ -13,16 +12,16 @@ const SALT_ROUNDS = 10;
 
 //hashes plaintext password
 
-export async function hashPassword(password: string): Promise<string> {
-        return await bcrypt.hash(password, SALT_ROUNDS);
-}
+// export async function hashPassword(password: string): Promise<string> {
+//         return await bcrypt.hash(password, SALT_ROUNDS);
+// }
 
 
-//validates password
+// //validates password
 
-export async function verifyPassword(password: string, hash: string): Promise<boolean> {
-        return await bcrypt.compare(password, hash);
-}
+// export async function verifyPassword(password: string, hash: string): Promise<boolean> {
+//         return await bcrypt.compare(password, hash);
+// }
 
 export async function registerUser(input: RegisterInput) {
         const {name,email, password} =  input;
@@ -54,4 +53,32 @@ export async function registerUser(input: RegisterInput) {
 
 }
 
+
+export async function loginUser(input: LoginInput) {
+        const {email, password} = input;
+
+        const existingUser = await prisma.user.findUnique({
+                where: {
+                        email:email,
+
+                },
+        })
+
+        if(!existingUser) {
+                throw new Error("Invalid email or password");
+        } 
+
+ 
+
+        const isPasswordValid =  await bcrypt.compare(password, existingUser.password);
+
+        if(!isPasswordValid) {
+                throw new Error("Invalid email or password");
+        }
+
+        
+        const { password:_, ...safeUser } = existingUser;
+
+        return safeUser
+}
 
