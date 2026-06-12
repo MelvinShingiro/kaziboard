@@ -2,7 +2,8 @@
 
 import {Router, Request, Response, NextFunction} from 'express'
 import {registerSchema, loginSchema} from './auth.schema';
-import {ZodObject} from 'zod';
+import {success, ZodObject} from 'zod';
+import { registerUser } from './auth.service';
 
 //initialize the router 
 const authRouter: Router = Router();
@@ -52,11 +53,31 @@ interface RegisterBody {
 
 //request route
 
-authRouter.post('/register',validateBody(registerSchema),(req: Request<{}, {}, RegisterBody>, res: Response) => {
+authRouter.post('/register',validateBody(registerSchema), async(req: Request<{}, {}, RegisterBody>, res: Response) => {
+
+  try {
   const { name, email, password } = req.body;
+  console.log("REGISTER BODY:", req.body);
+  const user = await registerUser(req.body);
+
   res.status(201).json({
-        message: `User ${name} created successfully`
+        message: `User ${user.name} created successfully`
   });
+
+  } catch (error) {
+
+    if (error instanceof Error && error.message === "User already exists") {
+      return res.status(409).json({
+        success: false,
+        message: "User already exists",
+
+      });
+    }
+
+    res.status(500).json({ success: false, message: 'Server Error'});
+
+    console.log("REGISTER ERROR:", error);
+  }
 })
 
 
