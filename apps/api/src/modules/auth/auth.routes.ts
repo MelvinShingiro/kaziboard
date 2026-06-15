@@ -5,6 +5,8 @@ import {registerSchema, loginSchema} from './auth.schema';
 import {success, ZodObject} from 'zod';
 import { loginUser, registerUser } from './auth.service';
 import { generateToken } from '../../utils/token';
+import { authenticate } from "../../middleware/authenticate";
+import { getUserById } from "./auth.service";
 
 
 //initialize the router 
@@ -43,6 +45,24 @@ export const validateBody = (schema: ZodObject) => {
 //GET route that fetch ALL users may be needed later on
 authRouter.get('/', (req: Request, res: Response) => {
         res.json({message: 'Fetching all users'})
+});
+
+authRouter.get("/me", authenticate, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId;
+
+    const user = await getUserById(userId);
+
+    return res.status(200).json({
+      success: true,
+      user,
+    });
+  } catch (error) {
+    return res.status(404).json({
+      success: false,
+      message: "User not found",
+    });
+  }
 });
 
 //POST route for registering

@@ -82,3 +82,19 @@ export async function loginUser(input: LoginInput) {
         return safeUser
 }
 
+
+export async function getUserById(userId: number) {
+  const user = await prisma.user.findUnique({
+    where: {
+      id: userId,
+    },
+  });
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  const { password: _, ...safeUser } = user;
+
+  return safeUser;
+}
