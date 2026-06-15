@@ -1,35 +1,36 @@
-import { useEffect, useState } from "react";
+import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+import DashboardPage from "./pages/DashboardPage";
 
-type HealthResponse = {
-  status: string;
-  service: string;
-};
+
+// type HealthResponse = {
+//   status: string;
+//   service: string;
+// };
 
 function App() {
-  const [apiStatus, setApiStatus] = useState<string>("checking...");
+ return (
+  <BrowserRouter>
+  <nav>
+    
+    <Link to="/login">Login</Link>{" "}
+    <Link to="/register">Register</Link>{" "}
+    <Link to="/dashboard">Dashboard</Link>{" "}
+    </nav>
+    
+    <Routes>
 
-  useEffect(() => {
-    async function checkApiHealth() {
-      try {
-        const response = await fetch("http://localhost:4000/health");
-        const data: HealthResponse = await response.json();
+      <Route path="/login" element={<LoginPage></LoginPage>}></Route>
+      <Route path="/register" element={<RegisterPage></RegisterPage>}></Route>
+      <Route path="/dashboard" element={<DashboardPage></DashboardPage>}></Route>
 
-        setApiStatus(data.status);
-      } catch {
-        setApiStatus("error connecting to API");
-      }
-    }
 
-    checkApiHealth();
-  }, []);
+    </Routes>
 
-  return (
-    <main>
-      <h1>KaziBoard</h1>
-      <p>Frontend is running.</p>
-      <p>API status: {apiStatus}</p>
-    </main>
-  );
-}
+    
+    </BrowserRouter>
+ )
+};
 
 export default App;
