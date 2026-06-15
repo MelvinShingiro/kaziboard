@@ -17,9 +17,23 @@ datasource db {
 model User {
   id   Int @id @default(autoincrement())
   email String @unique
-  name String?
+  name String
   //do not forget to hash the password using bycript
   password String
   createdAt DateTime @default(now())
+  // one user can have multiple projectsS
+  projects Project[]
 
+}
+
+
+//One project can only have a single user
+model Project {
+  id Int @id @default(autoincrement())
+  name String
+  ownerId Int 
+  description String?
+  createdAt DateTime @default(now())
+
+  owner User @relation(fields: [ownerId], references: [id])
 }
