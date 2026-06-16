@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 type Project = {
   id: number;
@@ -13,6 +14,8 @@ export default function DashboardPage() {
   const [message, setMessage] = useState("");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     async function fetchProjects() {
@@ -47,7 +50,7 @@ export default function DashboardPage() {
 
    
     fetchProjects();
-  }, []);
+  }, [navigate]);
 
    async function handleCreateProject(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -55,7 +58,7 @@ export default function DashboardPage() {
         const token = localStorage.getItem("token");
 
         if(!token) {
-                setMessage("You are not loggined in");
+                navigate("/login");
                 return;
         }
 

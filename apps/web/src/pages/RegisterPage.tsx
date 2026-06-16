@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+
 export default function RegisterPage() {
         const [name, setName] = useState("");
         const [email, setEmail] = useState("");
