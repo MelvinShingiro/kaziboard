@@ -45,8 +45,52 @@ export default function DashboardPage() {
       }
     }
 
+   
     fetchProjects();
   }, []);
+
+   async function handleCreateProject(event: React.FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+
+        const token = localStorage.getItem("token");
+
+        if(!token) {
+                setMessage("You are not loggined in");
+                return;
+        }
+
+        setMessage("Creating project...");
+
+     try {
+  const response = await fetch("http://localhost:4000/api/projects", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      name,
+      description,
+    }),
+  });
+
+  const data = await response.json();
+
+                if (!response.ok) {
+                setMessage(data.message || "Failed to create project");
+                return;
+                }
+
+                setProjects([data.project, ...projects]);
+                setName("");
+                setDescription("");
+                setMessage("Project created successfully");
+                } catch (error) {
+                console.log("CREATE PROJECT ERROR:", error);
+                setMessage("Something went wrong while creating the project");
+                }
+    }
+
 
   return (
     <div className="space-y-8">
@@ -71,7 +115,7 @@ export default function DashboardPage() {
             Add a new client or freelance project.
           </p>
 
-          <form className="mt-6 space-y-4">
+          <form onSubmit={handleCreateProject} className="mt-6 space-y-4">
             <div>
               <label className="kazi-label">Project name</label>
               <input
