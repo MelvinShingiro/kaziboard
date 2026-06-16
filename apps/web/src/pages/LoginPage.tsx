@@ -43,32 +43,42 @@ export default function LoginPage() {
   }
 
   return (
-    <div>
-      <h1>Login Page</h1>
+    <div className="flex min-h-[70vh] items-center justify-center">
+      <div className="kazi-card w-full max-w-md p-8">
+        <h1 className="kazi-page-title">Login</h1>
 
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Email</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-          />
-        </div>
+        <p className="mt-2 kazi-muted">Sign in to manage your projects.</p>
 
-        <div>
-          <label>Password</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-        </div>
+        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+          <div>
+            <label className="kazi-label">Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              className="kazi-input"
+              placeholder="you@example.com"
+            />
+          </div>
 
-        <button type="submit">Login</button>
-      </form>
+          <div>
+            <label className="kazi-label">Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              className="kazi-input"
+              placeholder="Enter your password"
+            />
+          </div>
 
-      <p>{message}</p>
+          <button type="submit" className="kazi-button-primary w-full">
+            Login
+          </button>
+        </form>
+
+        {message && <p className="mt-4 kazi-muted">{message}</p>}
+      </div>
     </div>
   );
 }
