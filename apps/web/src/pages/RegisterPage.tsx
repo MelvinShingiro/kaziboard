@@ -8,7 +8,7 @@ export default function RegisterPage() {
         const [password, setPassword] = useState("");
         const [message, setMessage] = useState("");
 
-  const navigate = useNavigate();
+        const navigate = useNavigate();
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();

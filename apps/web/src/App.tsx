@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Link, useNavigate } from "react-router-do
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import DashboardPage from "./pages/DashboardPage";
+import ProjectPage from "./pages/ProjectPage";
 
 function NavBar() {
   const navigate = useNavigate();
@@ -49,6 +50,7 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/projects/:id" element={<ProjectPage />} />
           </Routes>
         </main>
       </div>

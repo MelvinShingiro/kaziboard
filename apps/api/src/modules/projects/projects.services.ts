@@ -30,7 +30,20 @@ export async function getUserProjects(ownerId: number) {
   return projects;
 }
 
-export async function getProjectById() {}
+export async function getProjectById(projectId: number, ownerId: number) {
+  const project = await prisma.project.findFirst({
+    where: {
+      id: projectId,
+      ownerId,
+    },
+  });
+
+  if (!project) {
+    throw new Error("Project not found");
+  }
+
+  return project;
+}
 
 
 export async function deleteProject() {}

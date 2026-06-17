@@ -5,7 +5,7 @@ import { createProjectSchema } from './projects.schema';
 import { CreateProjectInput } from './projects.schema';
 import { createProject } from './projects.services';
 import { getUserProjects } from "./projects.services";
-
+import { getProjectById } from './projects.services';
 const projectsRouter: Router = Router();
 
 projectsRouter.post( "/", authenticate, validateBody(createProjectSchema),
@@ -55,6 +55,44 @@ projectsRouter.get(
   }
 );
 
+projectsRouter.get(
+  "/:id",
+  authenticate,
+  async (req: Request, res: Response) => {
+    try {
+      const ownerId = (req as any).userId;
+      const projectId = Number(req.params.id);
+
+      if (Number.isNaN(projectId)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid project id",
+        });
+      }
+
+      const project = await getProjectById(projectId, ownerId);
+
+      return res.status(200).json({
+        success: true,
+        project,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message === "Project not found") {
+        return res.status(404).json({
+          success: false,
+          message: "Project not found",
+        });
+      }
+
+      console.log("GET PROJECT BY ID ERROR:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Server error",
+      });
+    }
+  }
+);
 
 
 
