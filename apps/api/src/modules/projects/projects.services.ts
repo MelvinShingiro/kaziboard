@@ -2,18 +2,25 @@ import type { CreateProjectInput } from "./projects.schema";
 import {prisma} from "../../config/db"
 
 
-export async function createProject(input:CreateProjectInput, ownerId: number) {
-        const {name, description} = input;
+export async function createProject(input: CreateProjectInput, ownerId: number) {
+  const { name, description } = input;
 
-        const project = await prisma.project.create({
-                data: {
-                        name: name,
-                        description: description,
-                        ownerId,
-                },
-        });
+  const project = await prisma.project.create({
+    data: {
+      name,
+      description,
+      ownerId,
+      columns: {
+        create: [
+          { name: "To Do", position: 1 },
+          { name: "In Progress", position: 2 },
+          { name: "Done", position: 3 },
+        ],
+      },
+    },
+  });
 
-        return project;
+  return project;
 }
 
 
