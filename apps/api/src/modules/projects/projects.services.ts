@@ -54,3 +54,36 @@ export async function getProjectById(projectId: number, ownerId: number) {
 
 
 export async function deleteProject() {}
+
+export async function getProjectBoard(projectId: number, ownerId: number) {
+ 
+
+  const project = await prisma.project.findFirst({
+    where: {
+      id: projectId,
+      ownerId,
+    },
+
+    include: {
+      columns: {
+        orderBy: {
+          position: "asc",
+        },
+        include: {
+          cards: {
+            orderBy: {
+              position: "asc",
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if(!project) {
+    throw new Error("Project not found");
+
+  }
+
+  return project;
+}
