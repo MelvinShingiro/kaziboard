@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import authRouter from "./modules/auth/auth.routes";
 import projectsRouter from "./modules/projects/projects.routes";
+import cardsRouter from "./modules/cards/cards.routes";
 
 
 
@@ -19,6 +20,7 @@ app.get("/health",(req,res)=>{
 
 app.use("/api/auth", authRouter);
 app.use("/api/projects", projectsRouter);
+app.use("/api/columns", cardsRouter);
 
 
 
