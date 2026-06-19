@@ -143,6 +143,55 @@ export default function ProjectPage() {
     }
   }
 
+  async function handleDeleteCard(cardId: number, columnId: number) {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `http://localhost:4000/api/columns/cards/${cardId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMessage(data.message || "Failed to delete card");
+        return;
+      }
+
+      setProject((currentProject) => {
+        if (!currentProject) return currentProject;
+
+        return {
+          ...currentProject,
+          columns: currentProject.columns.map((column) => {
+            if (column.id !== columnId) return column;
+
+            return {
+              ...column,
+              cards: column.cards.filter((card) => card.id !== cardId),
+            };
+          }),
+        };
+      });
+
+      setMessage("");
+    } catch (error) {
+      console.log("DELETE CARD ERROR:", error);
+      setMessage("Something went wrong while deleting the card");
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="kazi-card p-8">
@@ -188,9 +237,7 @@ export default function ProjectPage() {
 
                   {selectedColumnId === column.id && (
                     <form
-                      onSubmit={(event) =>
-                        handleCreateCard(event, column.id)
-                      }
+                      onSubmit={(event) => handleCreateCard(event, column.id)}
                       className="mt-4 space-y-3"
                     >
                       <input
@@ -229,15 +276,29 @@ export default function ProjectPage() {
                           key={card.id}
                           className="rounded-xl border border-kazi-border bg-white p-4"
                         >
-                          <h3 className="text-sm font-semibold text-kazi-text">
-                            {card.title}
-                          </h3>
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <h3 className="text-sm font-semibold text-kazi-text">
+                                {card.title}
+                              </h3>
 
-                          {card.description && (
-                            <p className="mt-1 text-sm text-kazi-muted">
-                              {card.description}
-                            </p>
-                          )}
+                              {card.description && (
+                                <p className="mt-1 text-sm text-kazi-muted">
+                                  {card.description}
+                                </p>
+                              )}
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleDeleteCard(card.id, column.id)
+                              }
+                              className="text-xs font-medium text-kazi-danger hover:underline"
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </div>
                       ))
                     )}
