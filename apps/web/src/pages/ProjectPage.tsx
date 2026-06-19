@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   DndContext,
-  useDraggable,
   useDroppable,
   type DragEndEvent,
 } from "@dnd-kit/core";
+import BoardCard from "../components/board/BoardCard";
 
 type Card = {
   id: number;
@@ -33,63 +33,6 @@ type Project = {
   createdAt: string;
   columns: Column[];
 };
-
-type DraggableCardProps = {
-  card: Card;
-  columnId: number;
-  onDelete: (cardId: number, columnId: number) => void;
-};
-
-function DraggableCard({ card, columnId, onDelete }: DraggableCardProps) {
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
-    id: `card-${card.id}`,
-    data: {
-      cardId: card.id,
-      columnId,
-    },
-  });
-
-  const style = transform
-    ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-      }
-    : undefined;
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...listeners}
-      {...attributes}
-      className="cursor-grab rounded-xl border border-kazi-border bg-white p-4 active:cursor-grabbing"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h3 className="text-sm font-semibold text-kazi-text">
-            {card.title}
-          </h3>
-
-          {card.description && (
-            <p className="mt-1 text-sm text-kazi-muted">
-              {card.description}
-            </p>
-          )}
-        </div>
-
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            onDelete(card.id, columnId);
-          }}
-          className="text-xs font-medium text-kazi-danger hover:underline"
-        >
-          Delete
-        </button>
-      </div>
-    </div>
-  );
-}
 
 type DroppableColumnProps = {
   column: Column;
@@ -440,7 +383,7 @@ export default function ProjectPage() {
                         <p className="text-sm text-kazi-muted">No cards yet</p>
                       ) : (
                         column.cards.map((card) => (
-                          <DraggableCard
+                          <BoardCard
                             key={card.id}
                             card={card}
                             columnId={column.id}
