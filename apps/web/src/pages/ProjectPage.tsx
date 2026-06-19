@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   DndContext,
-  useDroppable,
   type DragEndEvent,
 } from "@dnd-kit/core";
 import BoardCard from "../components/board/BoardCard";
+import BoardColumn from "../components/board/BoardColumn";
 
 type Card = {
   id: number;
@@ -34,32 +34,7 @@ type Project = {
   columns: Column[];
 };
 
-type DroppableColumnProps = {
-  column: Column;
-  children: React.ReactNode;
-};
 
-function DroppableColumn({ column, children }: DroppableColumnProps) {
-  const { setNodeRef, isOver } = useDroppable({
-    id: `column-${column.id}`,
-    data: {
-      columnId: column.id,
-    },
-  });
-
-  return (
-    <div
-      ref={setNodeRef}
-      className={`rounded-2xl border p-4 transition ${
-        isOver
-          ? "border-kazi-primary bg-kazi-primary-soft"
-          : "border-kazi-border bg-kazi-surface-soft"
-      }`}
-    >
-      {children}
-    </div>
-  );
-}
 
 export default function ProjectPage() {
   const { id } = useParams();
@@ -323,7 +298,7 @@ export default function ProjectPage() {
             <DndContext onDragEnd={handleDragEnd}>
               <div className="mt-8 grid gap-4 md:grid-cols-3">
                 {project.columns.map((column) => (
-                  <DroppableColumn key={column.id} column={column}>
+                  <BoardColumn key={column.id} column={column}>
                     <div className="flex items-center justify-between">
                       <h2 className="font-semibold text-kazi-text">
                         {column.name}
@@ -392,7 +367,7 @@ export default function ProjectPage() {
                         ))
                       )}
                     </div>
-                  </DroppableColumn>
+                  </BoardColumn>
                 ))}
               </div>
             </DndContext>
