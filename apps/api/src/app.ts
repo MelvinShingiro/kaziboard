@@ -21,6 +21,7 @@ app.get("/health",(req,res)=>{
 app.use("/api/auth", authRouter);
 app.use("/api/projects", projectsRouter);
 app.use("/api/columns", cardsRouter);
+app.use("api/columns",cardsRouter);
 
 
 

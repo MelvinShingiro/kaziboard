@@ -45,3 +45,35 @@ export async function deleteCard(cardId: number) {
 
   return card;
 }
+
+export async function moveCard(cardId: number, targetColumnId: number) {
+  const card = await prisma.card.findUnique({
+    where: {
+      id: cardId,
+    },
+  });
+
+  if (!card) {
+    throw new Error("Card not found");
+  }
+
+  const cardsCount = await prisma.card.count({
+    where: {
+      columnId: targetColumnId,
+    },
+  });
+
+  const newPosition = cardsCount + 1;
+
+  const updatedCard = await prisma.card.update({
+    where: {
+      id: cardId,
+    },
+    data: {
+      columnId: targetColumnId,
+      position: newPosition,
+    },
+  });
+
+  return updatedCard;
+}

@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import {
+  DndContext,
+  useDraggable,
+  useDroppable,
+  type DragEndEvent,
+} from "@dnd-kit/core";
 
 type Card = {
   id: number;
@@ -27,6 +33,90 @@ type Project = {
   createdAt: string;
   columns: Column[];
 };
+
+type DraggableCardProps = {
+  card: Card;
+  columnId: number;
+  onDelete: (cardId: number, columnId: number) => void;
+};
+
+function DraggableCard({ card, columnId, onDelete }: DraggableCardProps) {
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+    id: `card-${card.id}`,
+    data: {
+      cardId: card.id,
+      columnId,
+    },
+  });
+
+  const style = transform
+    ? {
+        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+      }
+    : undefined;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...listeners}
+      {...attributes}
+      className="cursor-grab rounded-xl border border-kazi-border bg-white p-4 active:cursor-grabbing"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold text-kazi-text">
+            {card.title}
+          </h3>
+
+          {card.description && (
+            <p className="mt-1 text-sm text-kazi-muted">
+              {card.description}
+            </p>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onDelete(card.id, columnId);
+          }}
+          className="text-xs font-medium text-kazi-danger hover:underline"
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  );
+}
+
+type DroppableColumnProps = {
+  column: Column;
+  children: React.ReactNode;
+};
+
+function DroppableColumn({ column, children }: DroppableColumnProps) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `column-${column.id}`,
+    data: {
+      columnId: column.id,
+    },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`rounded-2xl border p-4 transition ${
+        isOver
+          ? "border-kazi-primary bg-kazi-primary-soft"
+          : "border-kazi-border bg-kazi-surface-soft"
+      }`}
+    >
+      {children}
+    </div>
+  );
+}
 
 export default function ProjectPage() {
   const { id } = useParams();
@@ -192,6 +282,82 @@ export default function ProjectPage() {
     }
   }
 
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+
+    if (!over) return;
+
+    const cardId = active.data.current?.cardId;
+    const sourceColumnId = active.data.current?.columnId;
+    const targetColumnId = over.data.current?.columnId;
+
+    if (!cardId || !sourceColumnId || !targetColumnId) return;
+
+    if (sourceColumnId === targetColumnId) return;
+
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `http://localhost:4000/api/columns/cards/${cardId}/move`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            targetColumnId,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMessage(data.message || "Failed to move card");
+        return;
+      }
+
+      setProject((currentProject) => {
+        if (!currentProject) return currentProject;
+
+        const movedCard = data.card as Card;
+
+        return {
+          ...currentProject,
+          columns: currentProject.columns.map((column) => {
+            if (column.id === sourceColumnId) {
+              return {
+                ...column,
+                cards: column.cards.filter((card) => card.id !== cardId),
+              };
+            }
+
+            if (column.id === targetColumnId) {
+              return {
+                ...column,
+                cards: [...column.cards, movedCard],
+              };
+            }
+
+            return column;
+          }),
+        };
+      });
+
+      setMessage("");
+    } catch (error) {
+      console.log("MOVE CARD ERROR:", error);
+      setMessage("Something went wrong while moving the card");
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="kazi-card p-8">
@@ -211,101 +377,82 @@ export default function ProjectPage() {
               Created {new Date(project.createdAt).toLocaleDateString()}
             </p>
 
-            <div className="mt-8 grid gap-4 md:grid-cols-3">
-              {project.columns.map((column) => (
-                <div
-                  key={column.id}
-                  className="rounded-2xl border border-kazi-border bg-kazi-surface-soft p-4"
-                >
-                  <div className="flex items-center justify-between">
-                    <h2 className="font-semibold text-kazi-text">
-                      {column.name}
-                    </h2>
+            <DndContext onDragEnd={handleDragEnd}>
+              <div className="mt-8 grid gap-4 md:grid-cols-3">
+                {project.columns.map((column) => (
+                  <DroppableColumn key={column.id} column={column}>
+                    <div className="flex items-center justify-between">
+                      <h2 className="font-semibold text-kazi-text">
+                        {column.name}
+                      </h2>
 
-                    <span className="rounded-full bg-white px-2 py-1 text-xs text-kazi-muted">
-                      {column.cards.length}
-                    </span>
-                  </div>
+                      <span className="rounded-full bg-white px-2 py-1 text-xs text-kazi-muted">
+                        {column.cards.length}
+                      </span>
+                    </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setSelectedColumnId(column.id)}
-                    className="mt-4 w-full rounded-xl border border-kazi-border bg-white px-4 py-2 text-sm font-medium text-kazi-text transition hover:border-kazi-primary"
-                  >
-                    Add card
-                  </button>
-
-                  {selectedColumnId === column.id && (
-                    <form
-                      onSubmit={(event) => handleCreateCard(event, column.id)}
-                      className="mt-4 space-y-3"
+                    <button
+                      type="button"
+                      onClick={() => setSelectedColumnId(column.id)}
+                      className="mt-4 w-full rounded-xl border border-kazi-border bg-white px-4 py-2 text-sm font-medium text-kazi-text transition hover:border-kazi-primary"
                     >
-                      <input
-                        type="text"
-                        value={cardTitle}
-                        onChange={(event) => setCardTitle(event.target.value)}
-                        placeholder="Card title"
-                        className="kazi-input"
-                      />
+                      Add card
+                    </button>
 
-                      <textarea
-                        value={cardDescription}
-                        onChange={(event) =>
-                          setCardDescription(event.target.value)
+                    {selectedColumnId === column.id && (
+                      <form
+                        onSubmit={(event) =>
+                          handleCreateCard(event, column.id)
                         }
-                        placeholder="Card description"
-                        rows={3}
-                        className="kazi-input resize-none"
-                      />
-
-                      <button
-                        type="submit"
-                        className="kazi-button-primary w-full"
+                        className="mt-4 space-y-3"
                       >
-                        Save card
-                      </button>
-                    </form>
-                  )}
+                        <input
+                          type="text"
+                          value={cardTitle}
+                          onChange={(event) =>
+                            setCardTitle(event.target.value)
+                          }
+                          placeholder="Card title"
+                          className="kazi-input"
+                        />
 
-                  <div className="mt-4 space-y-3">
-                    {column.cards.length === 0 ? (
-                      <p className="text-sm text-kazi-muted">No cards yet</p>
-                    ) : (
-                      column.cards.map((card) => (
-                        <div
-                          key={card.id}
-                          className="rounded-xl border border-kazi-border bg-white p-4"
+                        <textarea
+                          value={cardDescription}
+                          onChange={(event) =>
+                            setCardDescription(event.target.value)
+                          }
+                          placeholder="Card description"
+                          rows={3}
+                          className="kazi-input resize-none"
+                        />
+
+                        <button
+                          type="submit"
+                          className="kazi-button-primary w-full"
                         >
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <h3 className="text-sm font-semibold text-kazi-text">
-                                {card.title}
-                              </h3>
-
-                              {card.description && (
-                                <p className="mt-1 text-sm text-kazi-muted">
-                                  {card.description}
-                                </p>
-                              )}
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleDeleteCard(card.id, column.id)
-                              }
-                              className="text-xs font-medium text-kazi-danger hover:underline"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </div>
-                      ))
+                          Save card
+                        </button>
+                      </form>
                     )}
-                  </div>
-                </div>
-              ))}
-            </div>
+
+                    <div className="mt-4 space-y-3">
+                      {column.cards.length === 0 ? (
+                        <p className="text-sm text-kazi-muted">No cards yet</p>
+                      ) : (
+                        column.cards.map((card) => (
+                          <DraggableCard
+                            key={card.id}
+                            card={card}
+                            columnId={column.id}
+                            onDelete={handleDeleteCard}
+                          />
+                        ))
+                      )}
+                    </div>
+                  </DroppableColumn>
+                ))}
+              </div>
+            </DndContext>
           </>
         ) : (
           !message && <p className="mt-2 kazi-muted">Loading project...</p>
