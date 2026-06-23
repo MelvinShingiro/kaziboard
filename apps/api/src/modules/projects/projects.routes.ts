@@ -122,7 +122,7 @@ projectsRouter.get(
         return res.status(404).json({
           success: false,
           message: "Project not found",
-        });
+        }); 
       }
 
       console.log("GET PROJECT BOARD ERROR:", error);

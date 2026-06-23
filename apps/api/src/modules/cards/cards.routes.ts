@@ -41,7 +41,7 @@ cardsRouter.post(
   }
 );
 
-
+//makes you being able to delete cards
 cardsRouter.delete(
   "/cards/:cardId",
   authenticate,
@@ -81,6 +81,7 @@ cardsRouter.delete(
   }
 )
 
+//makes the cards move from in between boards to make it easier to track tasks.
 cardsRouter.patch(
   "/cards/:cardId/move",
   authenticate,
