@@ -6,6 +6,13 @@ import {
 } from "@dnd-kit/core";
 import BoardCard from "../components/board/BoardCard";
 import BoardColumn from "../components/board/BoardColumn";
+import {
+  createCard as createCardRequest,
+  deleteCard as deleteCardRequest,
+  getProjectBoard,
+  moveCard as moveCardRequest,
+  updateCard as updateCardRequest,
+} from "../services/api";
 import type { Card, Column, Project } from "../types/board";
 
 export default function ProjectPage() {
@@ -24,39 +31,27 @@ export default function ProjectPage() {
   useEffect(() => {
     async function fetchProject() {
       try {
-        const token = localStorage.getItem("token");
-
-        if (!token) {
-          navigate("/login");
-          return;
-        }
-
         if (!id) {
           setMessage("Project id is missing");
           return;
         }
 
-        const response = await fetch(
-          `http://localhost:4000/api/projects/${id}/board`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const project = await getProjectBoard(id);
+        setProject(project);
+        setMessage("");
+      } catch (error) {
+        console.log("FETCH PROJECT ERROR:", error);
 
-        const data = await response.json();
-
-        if (!response.ok) {
-          setMessage(data.message || "Failed to load project");
+        if (error instanceof Error && error.message === "No token provided") {
+          navigate("/login");
           return;
         }
 
-        setProject(data.project);
-      } catch (error) {
-        console.log("FETCH PROJECT ERROR:", error);
-        setMessage("Something went wrong while loading this project");
+        setMessage(
+          error instanceof Error
+            ? error.message
+            : "Something went wrong while loading this project"
+        );
       }
     }
 
@@ -69,37 +64,13 @@ export default function ProjectPage() {
   ) {
     event.preventDefault();
 
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      navigate("/login");
-      return;
-    }
-
     try {
-      const response = await fetch(
-        `http://localhost:4000/api/columns/${columnId}/cards`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            title: cardTitle,
-            description: cardDescription,
-            priority: cardPriority,
-            dueDate: cardDueDate || null,
-          }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setMessage(data.message || "Failed to create card");
-        return;
-      }
+      const card = await createCardRequest(columnId, {
+        title: cardTitle,
+        description: cardDescription,
+        priority: cardPriority,
+        dueDate: cardDueDate || null,
+      });
 
       setProject((currentProject) => {
         if (!currentProject) return currentProject;
@@ -111,7 +82,7 @@ export default function ProjectPage() {
 
             return {
               ...column,
-              cards: [...column.cards, data.card],
+              cards: [...column.cards, card],
             };
           }),
         };
@@ -125,35 +96,23 @@ export default function ProjectPage() {
       setMessage("");
     } catch (error) {
       console.log("CREATE CARD ERROR:", error);
-      setMessage("Something went wrong while creating the card");
+
+      if (error instanceof Error && error.message === "No token provided") {
+        navigate("/login");
+        return;
+      }
+
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Something went wrong while creating the card"
+      );
     }
   }
 
   async function handleDeleteCard(cardId: number, columnId: number) {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      navigate("/login");
-      return;
-    }
-
     try {
-      const response = await fetch(
-        `http://localhost:4000/api/columns/cards/${cardId}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setMessage(data.message || "Failed to delete card");
-        return;
-      }
+      await deleteCardRequest(cardId);
 
       setProject((currentProject) => {
         if (!currentProject) return currentProject;
@@ -174,7 +133,17 @@ export default function ProjectPage() {
       setMessage("");
     } catch (error) {
       console.log("DELETE CARD ERROR:", error);
-      setMessage("Something went wrong while deleting the card");
+
+      if (error instanceof Error && error.message === "No token provided") {
+        navigate("/login");
+        return;
+      }
+
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Something went wrong while deleting the card"
+      );
     }
   }
 
@@ -186,37 +155,13 @@ export default function ProjectPage() {
     priority: Card["priority"],
     dueDate: string
   ) {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      navigate("/login");
-      return false;
-    }
-
     try {
-      const response = await fetch(
-        `http://localhost:4000/api/columns/cards/${cardId}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            title,
-            description,
-            priority,
-            dueDate: dueDate || null,
-          }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setMessage(data.message || "Failed to update card");
-        return false;
-      }
+      const updatedCard = await updateCardRequest(cardId, {
+        title,
+        description,
+        priority,
+        dueDate: dueDate || null,
+      });
 
       setProject((currentProject) => {
         if (!currentProject) return currentProject;
@@ -229,7 +174,7 @@ export default function ProjectPage() {
             return {
               ...column,
               cards: column.cards.map((card) =>
-                card.id === cardId ? (data.card as Card) : card
+                card.id === cardId ? updatedCard : card
               ),
             };
           }),
@@ -240,7 +185,17 @@ export default function ProjectPage() {
       return true;
     } catch (error) {
       console.log("UPDATE CARD ERROR:", error);
-      setMessage("Something went wrong while updating the card");
+
+      if (error instanceof Error && error.message === "No token provided") {
+        navigate("/login");
+        return false;
+      }
+
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Something went wrong while updating the card"
+      );
       return false;
     }
   }
@@ -258,39 +213,11 @@ export default function ProjectPage() {
 
     if (sourceColumnId === targetColumnId) return;
 
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      navigate("/login");
-      return;
-    }
-
     try {
-      const response = await fetch(
-        `http://localhost:4000/api/columns/cards/${cardId}/move`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            targetColumnId,
-          }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setMessage(data.message || "Failed to move card");
-        return;
-      }
+      const movedCard = await moveCardRequest(cardId, targetColumnId);
 
       setProject((currentProject) => {
         if (!currentProject) return currentProject;
-
-        const movedCard = data.card as Card;
 
         return {
           ...currentProject,
@@ -317,7 +244,17 @@ export default function ProjectPage() {
       setMessage("");
     } catch (error) {
       console.log("MOVE CARD ERROR:", error);
-      setMessage("Something went wrong while moving the card");
+
+      if (error instanceof Error && error.message === "No token provided") {
+        navigate("/login");
+        return;
+      }
+
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Something went wrong while moving the card"
+      );
     }
   }
 

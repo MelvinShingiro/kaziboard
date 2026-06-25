@@ -45,6 +45,8 @@ model Card {
   id          Int      @id @default(autoincrement())
   title       String
   description String?
+  priority    String   @default("MEDIUM")
+  dueDate     DateTime?
   position    Int
   columnId    Int
   createdAt   DateTime @default(now())

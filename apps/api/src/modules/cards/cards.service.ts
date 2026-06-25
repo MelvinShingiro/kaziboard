@@ -1,12 +1,20 @@
 import { prisma } from "../../config/db";
 import type { CreateCardInput, UpdateCardInput } from "./cards.schema";
 
+function parseDueDate(dueDate?: string | null) {
+  if (!dueDate) {
+    return null;
+  }
+
+  return new Date(dueDate);
+}
+
 export async function createCard(
   input: CreateCardInput,
   columnId: number,
   ownerId: number
 ) {
-  const { title, description } = input;
+  const { title, description, priority, dueDate } = input;
 
   const column = await prisma.column.findFirst({
     where: {
@@ -33,6 +41,8 @@ export async function createCard(
     data: {
       title,
       description,
+      priority: priority ?? "MEDIUM",
+      dueDate: parseDueDate(dueDate),
       columnId,
       position,
     },
@@ -68,6 +78,8 @@ export async function updateCard(
     data: {
       title: input.title,
       description: input.description,
+      priority: input.priority,
+      dueDate: parseDueDate(input.dueDate),
     },
   });
 
