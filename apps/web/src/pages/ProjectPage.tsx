@@ -172,6 +172,67 @@ export default function ProjectPage() {
     }
   }
 
+  async function handleUpdateCard(
+    cardId: number,
+    columnId: number,
+    title: string,
+    description: string
+  ) {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `http://localhost:4000/api/columns/cards/${cardId}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            title,
+            description,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMessage(data.message || "Failed to update card");
+        return;
+      }
+
+      setProject((currentProject) => {
+        if (!currentProject) return currentProject;
+
+        return {
+          ...currentProject,
+          columns: currentProject.columns.map((column: Column) => {
+            if (column.id !== columnId) return column;
+
+            return {
+              ...column,
+              cards: column.cards.map((card) =>
+                card.id === cardId ? (data.card as Card) : card
+              ),
+            };
+          }),
+        };
+      });
+
+      setMessage("");
+    } catch (error) {
+      console.log("UPDATE CARD ERROR:", error);
+      setMessage("Something went wrong while updating the card");
+    }
+  }
+
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
 
@@ -335,6 +396,7 @@ export default function ProjectPage() {
                             card={card}
                             columnId={column.id}
                             onDelete={handleDeleteCard}
+                            onUpdate={handleUpdateCard}
                           />
                         ))
                       )}

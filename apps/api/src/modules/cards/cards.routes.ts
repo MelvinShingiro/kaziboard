@@ -1,12 +1,34 @@
 import { Router, Request, Response } from "express";
 import { authenticate } from "../../middleware/authenticate";
 import { validateBody } from "../auth/auth.routes";
-import { createCardSchema, type CreateCardInput } from "./cards.schema";
-import { success } from "zod/mini";
-import { createCard, deleteCard, moveCard } from "./cards.service";
-
+import {
+  createCardSchema,
+  updateCardSchema,
+  type CreateCardInput,
+  type UpdateCardInput,
+} from "./cards.schema";
+import { createCard, deleteCard, moveCard, updateCard } from "./cards.service";
 
 const cardsRouter = Router();
+
+function handleCardErrors(error: unknown, res: Response, label: string) {
+  if (
+    error instanceof Error &&
+    (error.message === "Card not found" || error.message === "Column not found")
+  ) {
+    return res.status(404).json({
+      success: false,
+      message: error.message,
+    });
+  }
+
+  console.log(`${label}:`, error);
+
+  return res.status(500).json({
+    success: false,
+    message: "Server error",
+  });
+}
 
 cardsRouter.post(
   "/:columnId/cards",
@@ -15,6 +37,7 @@ cardsRouter.post(
   async (req: Request<{ columnId: string }, {}, CreateCardInput>, res: Response) => {
     try {
       const columnId = Number(req.params.columnId);
+      const ownerId = (req as any).userId;
 
       if (Number.isNaN(columnId)) {
         return res.status(400).json({
@@ -23,7 +46,7 @@ cardsRouter.post(
         });
       }
 
-      const card = await createCard(req.body, columnId);
+      const card = await createCard(req.body, columnId, ownerId);
 
       return res.status(201).json({
         success: true,
@@ -31,57 +54,68 @@ cardsRouter.post(
         card,
       });
     } catch (error) {
-  console.log("CREATE CARD ERROR:", error);
-
-  return res.status(500).json({
-    success: false,
-    message: error instanceof Error ? error.message : "Server error",
-  });
-}
+      return handleCardErrors(error, res, "CREATE CARD ERROR");
+    }
   }
 );
 
-//makes you being able to delete cards
-cardsRouter.delete(
+cardsRouter.patch(
   "/cards/:cardId",
   authenticate,
-  async (req: Request,res: Response) => {
+  validateBody(updateCardSchema),
+  async (req: Request<{ cardId: string }, {}, UpdateCardInput>, res: Response) => {
     try {
       const cardId = Number(req.params.cardId);
+      const ownerId = (req as any).userId;
 
-      if(Number.isNaN(cardId)) {
+      if (Number.isNaN(cardId)) {
         return res.status(400).json({
           success: false,
           message: "Invalid card id",
         });
       }
 
-      const card = await deleteCard(cardId);
+      const card = await updateCard(cardId, req.body, ownerId);
 
       return res.status(200).json({
-          success: true,
-          message: "Card deleted successfully",
-          card,
-      })
-    }  catch(error) {
-      if(error instanceof Error && error.message === "Card not found") {
-        return res.status(404).json({
-          success: false,
-          message: "Card not found",
-        });;
-      }
-
-      console.log("DELETE CARD ERROR:", error);
-
-      return res.status(500).json({
-        success: false,
-        message: "Server error",
-      })
+        success: true,
+        message: "Card updated successfully",
+        card,
+      });
+    } catch (error) {
+      return handleCardErrors(error, res, "UPDATE CARD ERROR");
     }
   }
-)
+);
 
-//makes the cards move from in between boards to make it easier to track tasks.
+cardsRouter.delete(
+  "/cards/:cardId",
+  authenticate,
+  async (req: Request, res: Response) => {
+    try {
+      const cardId = Number(req.params.cardId);
+      const ownerId = (req as any).userId;
+
+      if (Number.isNaN(cardId)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid card id",
+        });
+      }
+
+      const card = await deleteCard(cardId, ownerId);
+
+      return res.status(200).json({
+        success: true,
+        message: "Card deleted successfully",
+        card,
+      });
+    } catch (error) {
+      return handleCardErrors(error, res, "DELETE CARD ERROR");
+    }
+  }
+);
+
 cardsRouter.patch(
   "/cards/:cardId/move",
   authenticate,
@@ -89,6 +123,7 @@ cardsRouter.patch(
     try {
       const cardId = Number(req.params.cardId);
       const targetColumnId = Number(req.body.targetColumnId);
+      const ownerId = (req as any).userId;
 
       if (Number.isNaN(cardId)) {
         return res.status(400).json({
@@ -104,7 +139,7 @@ cardsRouter.patch(
         });
       }
 
-      const card = await moveCard(cardId, targetColumnId);
+      const card = await moveCard(cardId, targetColumnId, ownerId);
 
       return res.status(200).json({
         success: true,
@@ -112,20 +147,9 @@ cardsRouter.patch(
         card,
       });
     } catch (error) {
-      if (error instanceof Error && error.message === "Card not found") {
-        return res.status(404).json({
-          success: false,
-          message: "Card not found",
-        });
-      }
-
-      console.log("MOVE CARD ERROR:", error);
-
-      return res.status(500).json({
-        success: false,
-        message: "Server error",
-      });
+      return handleCardErrors(error, res, "MOVE CARD ERROR");
     }
   }
 );
+
 export default cardsRouter;
