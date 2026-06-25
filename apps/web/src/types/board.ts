@@ -2,6 +2,8 @@ export type Card = {
   id: number;
   title: string;
   description: string | null;
+  priority: "LOW" | "MEDIUM" | "HIGH";
+  dueDate: string | null;
   position: number;
   columnId: number;
   createdAt: string;

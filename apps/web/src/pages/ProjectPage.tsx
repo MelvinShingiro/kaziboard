@@ -17,6 +17,8 @@ export default function ProjectPage() {
 
   const [cardTitle, setCardTitle] = useState("");
   const [cardDescription, setCardDescription] = useState("");
+  const [cardPriority, setCardPriority] = useState<Card["priority"]>("MEDIUM");
+  const [cardDueDate, setCardDueDate] = useState("");
   const [selectedColumnId, setSelectedColumnId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -86,6 +88,8 @@ export default function ProjectPage() {
           body: JSON.stringify({
             title: cardTitle,
             description: cardDescription,
+            priority: cardPriority,
+            dueDate: cardDueDate || null,
           }),
         }
       );
@@ -115,6 +119,8 @@ export default function ProjectPage() {
 
       setCardTitle("");
       setCardDescription("");
+      setCardPriority("MEDIUM");
+      setCardDueDate("");
       setSelectedColumnId(null);
       setMessage("");
     } catch (error) {
@@ -176,13 +182,15 @@ export default function ProjectPage() {
     cardId: number,
     columnId: number,
     title: string,
-    description: string
+    description: string,
+    priority: Card["priority"],
+    dueDate: string
   ) {
     const token = localStorage.getItem("token");
 
     if (!token) {
       navigate("/login");
-      return;
+      return false;
     }
 
     try {
@@ -197,6 +205,8 @@ export default function ProjectPage() {
           body: JSON.stringify({
             title,
             description,
+            priority,
+            dueDate: dueDate || null,
           }),
         }
       );
@@ -205,7 +215,7 @@ export default function ProjectPage() {
 
       if (!response.ok) {
         setMessage(data.message || "Failed to update card");
-        return;
+        return false;
       }
 
       setProject((currentProject) => {
@@ -227,9 +237,11 @@ export default function ProjectPage() {
       });
 
       setMessage("");
+      return true;
     } catch (error) {
       console.log("UPDATE CARD ERROR:", error);
       setMessage("Something went wrong while updating the card");
+      return false;
     }
   }
 
@@ -375,6 +387,27 @@ export default function ProjectPage() {
                           placeholder="Card description"
                           rows={3}
                           className="kazi-input resize-none"
+                        />
+
+                        <select
+                          value={cardPriority}
+                          onChange={(event) =>
+                            setCardPriority(event.target.value as Card["priority"])
+                          }
+                          className="kazi-input"
+                        >
+                          <option value="LOW">LOW</option>
+                          <option value="MEDIUM">MEDIUM</option>
+                          <option value="HIGH">HIGH</option>
+                        </select>
+
+                        <input
+                          type="date"
+                          value={cardDueDate}
+                          onChange={(event) =>
+                            setCardDueDate(event.target.value)
+                          }
+                          className="kazi-input"
                         />
 
                         <button
