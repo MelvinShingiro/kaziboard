@@ -6,35 +6,7 @@ import {
 } from "@dnd-kit/core";
 import BoardCard from "../components/board/BoardCard";
 import BoardColumn from "../components/board/BoardColumn";
-
-type Card = {
-  id: number;
-  title: string;
-  description: string | null;
-  position: number;
-  columnId: number;
-  createdAt: string;
-};
-
-type Column = {
-  id: number;
-  name: string;
-  position: number;
-  projectId: number;
-  createdAt: string;
-  cards: Card[];
-};
-
-type Project = {
-  id: number;
-  name: string;
-  description: string | null;
-  ownerId: number;
-  createdAt: string;
-  columns: Column[];
-};
-
-
+import type { Card, Column, Project } from "../types/board";
 
 export default function ProjectPage() {
   const { id } = useParams();
@@ -130,7 +102,7 @@ export default function ProjectPage() {
 
         return {
           ...currentProject,
-          columns: currentProject.columns.map((column) => {
+          columns: currentProject.columns.map((column: Column) => {
             if (column.id !== columnId) return column;
 
             return {
@@ -182,7 +154,7 @@ export default function ProjectPage() {
 
         return {
           ...currentProject,
-          columns: currentProject.columns.map((column) => {
+          columns: currentProject.columns.map((column: Column) => {
             if (column.id !== columnId) return column;
 
             return {
@@ -249,7 +221,7 @@ export default function ProjectPage() {
 
         return {
           ...currentProject,
-          columns: currentProject.columns.map((column) => {
+          columns: currentProject.columns.map((column: Column) => {
             if (column.id === sourceColumnId) {
               return {
                 ...column,

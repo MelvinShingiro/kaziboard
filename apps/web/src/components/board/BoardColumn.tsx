@@ -1,13 +1,5 @@
 import { useDroppable } from "@dnd-kit/core";
-
-type Column = {
-  id: number;
-  name: string;
-  position: number;
-  projectId: number;
-  createdAt: string;
-  cards: unknown[];
-};
+import type { Column } from "../../types/board";
 
 type BoardColumnProps = {
   column: Column;

@@ -1,13 +1,5 @@
 import { useDraggable } from "@dnd-kit/core";
-
-type Card = {
-  id: number;
-  title: string;
-  description: string | null;
-  position: number;
-  columnId: number;
-  createdAt: string;
-};
+import type { Card } from "../../types/board";
 
 type BoardCardProps = {
   card: Card;

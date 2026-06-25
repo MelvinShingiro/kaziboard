@@ -46,7 +46,7 @@ projectsRouter.get(
         projects,
       });
     } catch (error) {
-//       console.log("GET PROJECTS ERROR:", error);
+//console.log("GET PROJECTS ERROR:", error);
 
       return res.status(500).json({
         success: false,
