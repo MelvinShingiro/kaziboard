@@ -10,9 +10,15 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "types": ["node", "jest"]
+    "types": ["node"]
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules","dist","prisma.config.ts","prisma"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "prisma.config.ts",
+    "prisma",
+    "src/tests/**/*.ts",
+    "**/*.test.ts"
+  ]
 }
-

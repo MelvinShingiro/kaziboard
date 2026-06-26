@@ -8,6 +8,14 @@ const config: Config = {
   moduleFileExtensions: ["ts", "js", "json"],
   clearMocks: true,
   maxWorkers: 1,
+  transform: {
+    "^.+\\.tsx?$": [
+      "ts-jest",
+      {
+        tsconfig: "tsconfig.test.json",
+      },
+    ],
+  },
 };
 
 export default config;
