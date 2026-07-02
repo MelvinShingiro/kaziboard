@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-
+import { register } from "../services/api";
 
 export default function RegisterPage() {
         const [name, setName] = useState("");
@@ -16,19 +16,7 @@ export default function RegisterPage() {
     try {
       setMessage("Creating account...");
 
-      const response = await fetch("http://localhost:4000/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name,
-          email,
-          password,
-        }),
-      });
-
-      const data = await response.json();
+      const { response, data } = await register(name, email, password);
 
       if (!response.ok) {
         if(data.errors && data.errors.length > 0) {

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { createProject, getProjects } from "../services/api";
 
 type Project = {
   id: number;
@@ -27,24 +28,21 @@ export default function DashboardPage() {
           return;
         }
 
-        const response = await fetch("http://localhost:4000/api/projects", {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const projects = await getProjects();
+        setProjects(projects);
+      } catch (error) {
+        console.log("FETCH PROJECTS ERROR:", error);
 
-        const data = await response.json();
-
-        if (!response.ok) {
-          setMessage(data.message || "Failed to load projects");
+        if (error instanceof Error && error.message === "No token provided") {
+          navigate("/login");
           return;
         }
 
-        setProjects(data.projects);
-      } catch (error) {
-        console.log("FETCH PROJECTS ERROR:", error);
-        setMessage("Something went wrong while loading projects");
+        setMessage(
+          error instanceof Error
+            ? error.message
+            : "Something went wrong while loading projects"
+        );
       }
     }
 
@@ -64,32 +62,25 @@ export default function DashboardPage() {
     setMessage("Creating project...");
 
     try {
-      const response = await fetch("http://localhost:4000/api/projects", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          name,
-          description,
-        }),
-      });
+      const project = await createProject(name, description);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        setMessage(data.message || "Failed to create project");
-        return;
-      }
-
-      setProjects([data.project, ...projects]);
+      setProjects([project, ...projects]);
       setName("");
       setDescription("");
       setMessage("Project created successfully");
     } catch (error) {
       console.log("CREATE PROJECT ERROR:", error);
-      setMessage("Something went wrong while creating the project");
+
+      if (error instanceof Error && error.message === "No token provided") {
+        navigate("/login");
+        return;
+      }
+
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Something went wrong while creating the project"
+      );
     }
   }
 

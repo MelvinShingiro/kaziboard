@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { login } from "../services/api";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -14,18 +15,7 @@ export default function LoginPage() {
     try {
       setMessage("Logging in...");
 
-      const response = await fetch("http://localhost:4000/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
-      });
-
-      const data = await response.json();
+      const { response, data } = await login(email, password);
 
       if (!response.ok) {
         setMessage(data.message || "Login failed");
