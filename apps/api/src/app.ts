@@ -29,7 +29,7 @@ app.use(
         return;
       }
 
-      callback(new Error("Not allowed by CORS"));
+      callback(new Error(`CORS blocked origin: ${origin}`));
     },
     credentials: true,
   })
