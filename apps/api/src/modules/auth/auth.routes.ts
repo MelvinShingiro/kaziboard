@@ -1,38 +1,47 @@
 //URL paths
 
-import {Router, Request, Response, NextFunction} from 'express'
-import {registerSchema, loginSchema} from './auth.schema';
-import {success, ZodObject} from 'zod';
-import { loginUser, registerUser } from './auth.service';
-import { generateToken } from '../../utils/token';
+import { Router, Request, Response, NextFunction } from "express";
+import {
+  registerSchema,
+  loginSchema,
+  resendVerificationSchema,
+} from "./auth.schema";
+import { ZodObject } from "zod";
+import {
+  loginUser,
+  registerUser,
+  verifyEmailToken,
+  resendVerificationEmail,
+  getUserById,
+} from "./auth.service";
+import { generateToken } from "../../utils/token";
 import { authenticate } from "../../middleware/authenticate";
-import { getUserById } from "./auth.service";
 
-
-//initialize the router 
+//initialize the router
 const authRouter: Router = Router();
-
-
 
 //build a middleware function to handle errors in the routes
 
-
 export const validateBody = (schema: ZodObject) => {
-  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  return async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     // Perform data validation
     const result = schema.safeParse(req.body);
 
     // If validation fails, return a 400 Bad Request error early
     if (!result.success) {
       res.status(400).json({
-        status: 'fail',
-        message: 'Validation failed',
-        errors: result.error.issues.map(err => ({
-          field: err.path.join('.'),
-          message: err.message
-        }))
+        status: "fail",
+        message: "Validation failed",
+        errors: result.error.issues.map((err) => ({
+          field: err.path.join("."),
+          message: err.message,
+        })),
       });
-      return; 
+      return;
     }
 
     // Overwrite req.body with the cleaned, parsed data
@@ -41,10 +50,9 @@ export const validateBody = (schema: ZodObject) => {
   };
 };
 
-
 //GET route that fetch ALL users may be needed later on
-authRouter.get('/', (req: Request, res: Response) => {
-        res.json({message: 'Fetching all users'})
+authRouter.get("/", (req: Request, res: Response) => {
+  res.json({ message: "Fetching all users" });
 });
 
 authRouter.get("/me", authenticate, async (req: Request, res: Response) => {
@@ -65,56 +73,78 @@ authRouter.get("/me", authenticate, async (req: Request, res: Response) => {
   }
 });
 
-//POST route for registering
-
-interface RegisterBody {
-        name: string;
-        email: string;
-        password: string;
-}
-
-//request route
-
-authRouter.post('/register',validateBody(registerSchema), async(req: Request<{}, {}, RegisterBody>, res: Response) => {
-
+authRouter.get("/verify-email", async (req: Request, res: Response) => {
   try {
-  const { name, email, password } = req.body;
-  // console.log("REGISTER BODY:", req.body);
-  const user = await registerUser(req.body);
-  const token = generateToken(user.id);
+    const token = req.query.token;
 
-  res.status(201).json({
-        success: true,
-        message: `User ${user.name} created successfully`,
-        user,
-        token,
-  });
-
-  } catch (error) {
-
-    if (error instanceof Error && error.message === "User already exists") {
-      return res.status(409).json({
+    if (typeof token !== "string" || token.trim() === "") {
+      return res.status(400).json({
         success: false,
-        message: "User already exists",
-
+        message: "Verification token is required",
       });
     }
 
-    res.status(500).json({ success: false, message: 'Server Error'});
+    const result = await verifyEmailToken(token);
 
-    // console.log("REGISTER ERROR:", error);
+    return res.status(200).json({
+      success: true,
+      message: result.message,
+    });
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.message === "Invalid or expired verification token"
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
-})
+});
 
-
-
-//POST route for logging in
-interface LoginBody {
-        email: string;
-        password: string;
+interface RegisterBody {
+  name: string;
+  email: string;
+  password: string;
 }
 
-//request route
+authRouter.post(
+  "/register",
+  validateBody(registerSchema),
+  async (req: Request<{}, {}, RegisterBody>, res: Response) => {
+    try {
+      const user = await registerUser(req.body);
+
+      res.status(201).json({
+        success: true,
+        message:
+          "Account created. Check your email to verify your account before logging in.",
+        user,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.message === "User already exists") {
+        return res.status(409).json({
+          success: false,
+          message: "User already exists",
+        });
+      }
+
+      res.status(500).json({ success: false, message: "Server Error" });
+    }
+  }
+);
+
+interface LoginBody {
+  email: string;
+  password: string;
+}
+
 authRouter.post(
   "/login",
   validateBody(loginSchema),
@@ -132,10 +162,23 @@ authRouter.post(
         token,
       });
     } catch (error) {
-      if (error instanceof Error && error.message === "Invalid email or password") {
+      if (
+        error instanceof Error &&
+        error.message === "Invalid email or password"
+      ) {
         return res.status(401).json({
           success: false,
           message: "Invalid email or password",
+        });
+      }
+
+      if (
+        error instanceof Error &&
+        error.message === "Please verify your email before logging in."
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: "Please verify your email before logging in.",
         });
       }
 
@@ -147,20 +190,28 @@ authRouter.post(
   }
 );
 
+interface ResendVerificationBody {
+  email: string;
+}
+
+authRouter.post(
+  "/resend-verification",
+  validateBody(resendVerificationSchema),
+  async (req: Request<{}, {}, ResendVerificationBody>, res: Response) => {
+    try {
+      const result = await resendVerificationEmail(req.body.email);
+
+      return res.status(200).json({
+        success: true,
+        message: result.message,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Server error",
+      });
+    }
+  }
+);
 
 export default authRouter;
-
-//EXAMPLE OF STRUCTURE
-
-// // POST Route: Create a user with a typed Request Body
-// interface CreateUserBody {
-//   username: string;
-//   email: string;
-// }
-
-// authRouter.post('/', (req: Request<{}, {}, CreateUserBody>, res: Response) => {
-//   const { username, email } = req.body; // Fully type-safe
-//   res.status(201).json({ 
-//     message: `User ${username} created successfully.` 
-//   });
-// });

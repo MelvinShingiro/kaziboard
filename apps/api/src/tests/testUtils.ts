@@ -1,6 +1,7 @@
 import request from "supertest";
 import app from "../app";
 import { prisma } from "../config/db";
+import { generateToken } from "../utils/token";
 
 const TEST_PREFIX = "jest-kaziboard";
 
@@ -20,12 +21,24 @@ export async function registerTestUser(label: string) {
     password,
   });
 
+  const user = response.body.user;
+
+  if (user?.id) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { emailVerified: true },
+    });
+  }
+
+  const token =
+    user?.id != null ? generateToken(user.id) : (response.body.token as string);
+
   return {
     email,
     password,
     response,
-    token: response.body.token as string,
-    user: response.body.user,
+    token,
+    user,
   };
 }
 
@@ -64,6 +77,14 @@ export async function cleanupTestData() {
   if (userIds.length === 0) {
     return;
   }
+
+  await prisma.emailVerificationToken.deleteMany({
+    where: {
+      userId: {
+        in: userIds,
+      },
+    },
+  });
 
   const testProjects = await prisma.project.findMany({
     where: {

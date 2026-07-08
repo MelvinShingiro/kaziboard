@@ -15,5 +15,10 @@ export const loginSchema = z.object({
 
 });
 
+export const resendVerificationSchema = z.object({
+  email: z.email("Invalid email address"),
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type ResendVerificationInput = z.infer<typeof resendVerificationSchema>;

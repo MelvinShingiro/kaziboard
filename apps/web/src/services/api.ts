@@ -74,6 +74,31 @@ export async function register(
   return { response, data };
 }
 
+export async function verifyEmail(token: string) {
+  const response = await fetch(
+    `${API_BASE_URL}/api/auth/verify-email?token=${encodeURIComponent(token)}`,
+    {
+      method: "GET",
+    }
+  );
+
+  const data = await response.json();
+  return { response, data };
+}
+
+export async function resendVerificationEmail(email: string) {
+  const response = await fetch(`${API_BASE_URL}/api/auth/resend-verification`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email }),
+  });
+
+  const data = await response.json();
+  return { response, data };
+}
+
 export async function getProjects(): Promise<DashboardProject[]> {
   const response = await fetch(`${API_BASE_URL}/api/projects`, {
     method: "GET",

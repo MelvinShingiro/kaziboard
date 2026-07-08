@@ -1,11 +1,16 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { login } from "../services/api";
+import { login, resendVerificationEmail } from "../services/api";
+
+const UNVERIFIED_EMAIL_MESSAGE =
+  "Please verify your email before logging in.";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [isResending, setIsResending] = useState(false);
 
   const navigate = useNavigate();
 
@@ -13,12 +18,15 @@ export default function LoginPage() {
     event.preventDefault();
 
     try {
+      setNeedsVerification(false);
       setMessage("Logging in...");
 
       const { response, data } = await login(email, password);
 
       if (!response.ok) {
-        setMessage(data.message || "Login failed");
+        const errorMessage = data.message || "Login failed";
+        setMessage(errorMessage);
+        setNeedsVerification(errorMessage === UNVERIFIED_EMAIL_MESSAGE);
         return;
       }
 
@@ -29,6 +37,27 @@ export default function LoginPage() {
     } catch (error) {
       console.log("LOGIN FRONTEND ERROR:", error);
       setMessage("Something went wrong. Check the console.");
+    }
+  }
+
+  async function handleResendVerification() {
+    try {
+      setIsResending(true);
+      setMessage("Sending verification email...");
+
+      const { response, data } = await resendVerificationEmail(email);
+
+      if (!response.ok) {
+        setMessage(data.message || "Failed to resend verification email");
+        return;
+      }
+
+      setMessage(data.message || "If an account exists, a verification email has been sent.");
+    } catch (error) {
+      console.log("RESEND VERIFICATION FRONTEND ERROR:", error);
+      setMessage("Something went wrong. Check the console.");
+    } finally {
+      setIsResending(false);
     }
   }
 
@@ -68,6 +97,17 @@ export default function LoginPage() {
         </form>
 
         {message && <p className="mt-4 kazi-muted">{message}</p>}
+
+        {needsVerification && (
+          <button
+            type="button"
+            onClick={handleResendVerification}
+            disabled={isResending || !email}
+            className="mt-3 text-sm text-kazi-primary hover:underline disabled:opacity-50"
+          >
+            Resend verification email
+          </button>
+        )}
       </div>
     </div>
   );
